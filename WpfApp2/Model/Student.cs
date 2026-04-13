@@ -1,41 +1,76 @@
 ﻿using System;
-using System.Linq;
-using WpfApp2.ViewModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace WpfApp2.Model
 {
-    public class Student
+    public class Student : INotifyPropertyChanged
     {
+        private string firstName;
+        private string lastName;
+        private string middleName;
+        private DateTime birthday;
+        private double averageGrade;
+
         public int Id { get; set; }
-        public string LastName { get; set; }
-        public string FirstName { get; set; }
-        public string MiddleName { get; set; }
         public int GroupId { get; set; }
-        public DateTime BirthDate { get; set; }
-        public double AverageGrade { get; set; }
 
-        public Student CopyFromStudentDPO(StudentDPO p)
+        public string FirstName
         {
-            if (p == null) return this;
-
-            var vmGroup = new GroupViewModel();
-            var group = vmGroup.ListGroup?.FirstOrDefault(g => g.GroupName == p.GroupName);
-
-            if (group != null)
-            {
-                this.Id = p.Id;
-                this.GroupId = group.Id;
-                this.FirstName = p.FirstName;
-                this.LastName = p.LastName;
-                this.MiddleName = p.MiddleName;
-                this.BirthDate = p.BirthDate;
-                this.AverageGrade = p.AverageGrade;
-            }
-            return this;
+            get => firstName;
+            set { firstName = value; OnPropertyChanged(); }
         }
-        public Student ShallowCopy()
+
+        public string LastName
         {
-            return (Student)this.MemberwiseClone();
+            get => lastName;
+            set { lastName = value; OnPropertyChanged(); }
+        }
+
+        public string MiddleName
+        {
+            get => middleName;
+            set { middleName = value; OnPropertyChanged(); }
+        }
+
+        public DateTime Birthday
+        {
+            get => birthday;
+            set { birthday = value; OnPropertyChanged(); }
+        }
+
+        public double AverageGrade
+        {
+            get => averageGrade;
+            set { averageGrade = value; OnPropertyChanged(); }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+        public void CopyFromStudentDPO(StudentDPO dpo)
+        {
+            this.Id = dpo.Id;
+            this.GroupId = dpo.GroupId;
+            this.FirstName = dpo.FirstName;
+            this.LastName = dpo.LastName;
+            this.MiddleName = dpo.MiddleName;
+            this.Birthday = dpo.Birthday;
+            this.AverageGrade = dpo.AverageGrade;
+        }
+
+        public void CopyFromStudent(Student other)
+        {
+            this.Id = other.Id;
+            this.GroupId = other.GroupId;
+            this.FirstName = other.FirstName;
+            this.LastName = other.LastName;
+            this.MiddleName = other.MiddleName;
+            this.Birthday = other.Birthday;
+            this.AverageGrade = other.AverageGrade;
         }
     }
 }
