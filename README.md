@@ -1,56 +1,86 @@
 # Лабораторная работа №29
+---
+
+##  Ключевые изменения по сравнению с предыдущей лабораторной работой
+
+### Модели данных (Model)
+| Было | Стало |
+|------|-------|
+| Обычные POCO-классы |  Классы реализуют `INotifyPropertyChanged` |
+| Нет уведомления об изменениях |  Свойства вызывают `OnPropertyChanged()` в сеттерах |
+| Методы копирования возвращали новый объект |  Методы изменяют текущий объект (`void`) |
+
+###  ViewModel
+| Было | Стало |
+|------|-------|
+| Только коллекции данных |  + Свойства `SelectedGroup`/`SelectedStudentDPO` |
+| Нет команд |  Команды `Add/Edit/Delete` типа `RelayCommand` |
+| Логика в View | Вся бизнес-логика перенесена в ViewModel |
+| Нет валидации доступности кнопок |  `CanExecute` автоматически управляет состоянием кнопок |
+
+### View (Code-Behind)
+| Было | Стало |
+|------|-------|
+| Обработчики `btnAdd_Click`, `btnEdit_Click` | Удалены — логика в командах ViewModel |
+| Ручная установка `ItemsSource` | Привязка через `ItemsSource="{Binding ...}"` |
+| Прямая работа с элементами UI |  Синхронизация через `SelectedItem="{Binding ...}"` |
+| Конструктор с логикой |  Только `InitializeComponent()` + `DataContext = new ViewModel()` |
+
+### XAML-разметка
+| Было | Стало |
+|------|-------|
+| `<Button Click="..." />` |  `<Button Command="{Binding AddGroup}" />` |
+| ListView без привязок |  `ItemsSource` и `SelectedItem` через Binding |
+| Стили в каждой кнопке |  Единый стиль `{StaticResource ButtonMenu}` из словаря ресурсов |
+
+### Работа с данными
+| Было | Стало |
+|------|-------|
+| Конвертация `Student ↔ StudentDPO` в View |  Конвертация в ViewModel |
+| Ручное обновление `ItemsSource` | Автоматическое через `ObservableCollection + INotifyPropertyChanged` |
+| Выбор группы в ComboBox через code-behind |  Привязка `SelectedValue="{Binding GroupId}"` |
+
+### RelayCommand (Helper)
+| Было | Стало |
+|------|-------|
+| Базовая реализация `ICommand` |  Добавлен метод `RaiseCanExecuteChanged()` |
+| Нет принудительного обновления |  `CommandManager.InvalidateRequerySuggested()` для обновления состояния кнопок |
 
 ---
 
-## Выполненные изменения
+##  Структура проекта после изменений
 
-### 1. Модели данных (Model)
-- Реализован интерфейс `INotifyPropertyChanged` для всех классов моделей
-- Добавлено событие `PropertyChanged` и метод `OnPropertyChanged()`
-- Все свойства генерируют уведомления при изменении значений
-- Добавлены методы копирования объектов (`ShallowCopy`, `CopyFromStudent`)
-
-### 2. Слой ViewModel
-- **GroupViewModel**: управление коллекцией групп, команды CRUD, свойство `SelectedGroup`
-- **StudentViewModel**: управление коллекциями студентов, синхронизация данных, свойство `SelectedStudentDPO`
-
-### 3. Команды (Commands)
-- Создан класс `RelayCommand`, реализующий `ICommand`
-- Реализованы команды: `Add`, `Edit`, `Delete` для групп и студентов
-- Команды редактирования/удаления активны только при выбранном элементе
-- Логика кнопок перенесена из View в ViewModel
-
-### 4. Очистка View
-- Удалены все обработчики событий `Click` из code-behind
-- Убрана ручная работа с `ItemsSource` и элементами управления
-- В конструкторах окон осталась только инициализация и установка `DataContext`
-
-### 5. Привязка данных (XAML)
-- Кнопки: `Command="{Binding AddGroup}"` вместо `Click="..."`
-- Списки: `ItemsSource="{Binding ListGroup}"`, `SelectedItem="{Binding SelectedGroup}"`
-- Элементы ввода: двусторонняя привязка с `UpdateSourceTrigger=PropertyChanged`
-
-### 6. Стили и ресурсы
-- Создан `Dictionary1.xaml` со стилем `ButtonMenu` для кнопок
-- Словарь подключён в `App.xaml` через `MergedDictionaries`
-- Единое оформление всех кнопок управления
-
----
-
-## 📁 Структура проекта
 ```
 WpfApp2/
 ├── Helper/
-│   ├── RelayCommand.cs      # Реализация ICommand
-│   └── FindGroup.cs         # Вспомогательный класс
+│   ├── RelayCommand.cs      # Универсальная реализация ICommand
+│   └── FindGroup.cs         # Вспомогательный класс для поиска
 ├── Model/
-│   ├── Group.cs             # Модель группы
-│   ├── Student.cs           # Модель студента
-│   └── StudentDPO.cs        # DTO для отображения
+│   ├── Group.cs             # Модель группы (с INotifyPropertyChanged)
+│   ├── Student.cs           # Модель студента (с INotifyPropertyChanged)
+│   └── StudentDPO.cs        # DTO для отображения данных
 ├── ViewModel/
-│   ├── GroupViewModel.cs    # Логика работы с группами
-│   └── StudentViewModel.cs  # Логика работы со студентами
-├── View/                    # Окна приложения (XAML + минимальный CS)
-├── Dictionary1.xaml         # Словарь стилей
-└── App.xaml                 # Подключение ресурсов
+│   ├── GroupViewModel.cs    # Логика работы с группами + команды
+│   └── StudentViewModel.cs  # Логика работы со студентами + команды
+├── View/
+│   ├── WindowGroup.xaml(.cs)      # Окно списка групп
+│   ├── WindowNewGroup.xaml(.cs)   # Окно редактирования группы
+│   ├── WindowStudent.xaml(.cs)    # Окно списка студентов
+│   └── WindowNewStudent.xaml(.cs) # Окно редактирования студента
+├── Dictionary1.xaml         # Словарь ресурсов со стилями
+└── App.xaml                 # Подключение словаря ресурсов
 ```
+
+---
+
+## Реализованный функционал
+
+- **CRUD для групп**: добавление, редактирование, удаление с валидацией
+- **CRUD для студентов**: добавление с выбором группы, редактирование, удаление
+- **Автоматическая блокировка кнопок**: "Редактировать" и "Удалить" активны только при выбранном элементе
+- **Единый стиль интерфейса**: стиль `ButtonMenu` через словарь ресурсов
+- **Двусторонняя синхронизация данных**: изменения в ViewModel автоматически отображаются в UI
+
+---
+
+
