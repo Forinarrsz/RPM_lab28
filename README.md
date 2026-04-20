@@ -86,5 +86,114 @@ WpfApp2/
 - **Двусторонняя синхронизация данных**: изменения в ViewModel автоматически отображаются в UI
 
 ---
+# Лабораторная работа №30
 
+## Разработка приложений, взаимодействующих с данными в формате JSON
+
+### Сравнение с лабораторной работой №29
+
+| Аспект | Лаба №29 | Лаба №30 |
+|--------|----------|----------|
+| **Хранение данных** | Данные в оперативной памяти (in-memory) | Данные в JSON-файлах на диске |
+| **Сохранность** | Данные теряются при закрытии приложения | Данные сохраняются между запусками |
+| **Тип Birthday** | `DateTime` | `string` (формат "dd.MM.yyyy") |
+| **Зависимости** | Стандартные библиотеки WPF | + **Newtonsoft.Json** (NuGet) |
+| **Методы ViewModel** | Только CRUD операции | + `Load...()`, `SaveChanges()` |
+
+### 🔧 Основные изменения
+
+#### 1. **Структура проекта**
+```
+WpfApp2/
+├── DataModels/              ← НОВАЯ папка
+│   ├── GroupData.json       ← Новый файл
+│   └── StudentData.json     ← Новый файл
+├── Model/
+├── View/
+└── ViewModel/
+    ├── GroupViewModel.cs    ← Модифицирован
+    └── StudentViewModel.cs  ← Модифицирован
+```
+
+#### 2. **Изменения в моделях данных**
+```csharp
+// Было (Лаба 29)
+public DateTime Birthday { get; set; }
+
+// Стало (Лаба 30)
+public string Birthday { get; set; }
+```
+
+#### 3. **Новые поля в ViewModel**
+```csharp
+readonly string path = @"...\DataModels\GroupData.json";
+string _jsonGroups = String.Empty;
+public string Error { get; set; }
+```
+
+### Основные функции
+
+#### **GroupViewModel.cs**
+
+| Метод | Описание |
+|-------|----------|
+| `LoadGroup()` | Загружает JSON файл и десериализует в коллекцию `ListGroup` |
+| `SaveChanges(ListGroup)` | Сериализует коллекцию в JSON и записывает в файл |
+| `MaxId()` | Находит максимальный ID для генерации нового |
+| `AddGroup` | Добавляет группу + **сохраняет в JSON** |
+| `EditGroup` | Редактирует группу + **сохраняет в JSON** |
+| `DeleteGroup` | Удаляет группу + **сохраняет в JSON** |
+
+#### **StudentViewModel.cs**
+
+| Метод | Описание |
+|-------|----------|
+| `LoadStudent()` | Загружает данные студентов из JSON файла |
+| `GetListStudentDPO()` | Преобразует `Student` → `StudentDPO` для отображения |
+| `SaveChanges(ListStudent)` | Сохраняет изменения в `StudentData.json` |
+| `MaxId()` | Определяет следующий свободный ID |
+| `AddStudent` | Добавляет студента + **сохраняет в JSON** |
+| `EditStudent` | Редактирует студента + **сохраняет в JSON** |
+| `DeleteStudent` | Удаляет студента + **сохраняет в JSON** |
+
+### Ключевые технологии
+
+- **Newtonsoft.Json** - сериализация/десериализация
+- **File.ReadAllText()** - чтение JSON файла
+- **File.CreateText()** + **StreamWriter** - запись в файл
+- **JsonConvert.DeserializeObject<T>()** - преобразование JSON → объект
+- **JsonConvert.SerializeObject()** - преобразование объект → JSON
+
+### 📝 Формат JSON файлов
+
+**GroupData.json:**
+```json
+[
+  { "Id": 1, "Name": "ИВТ-11", "Specialty": "...", "Course": 1 }
+]
+```
+
+**StudentData.json:**
+```json
+[
+  { "Id": 1, "GroupId": 1, "FirstName": "Иван", "LastName": "Иванов", "Birthday": "15.01.2000" }
+]
+```
+
+### Требования
+
+- .NET Framework / .NET Core
+- **Newtonsoft.Json** (установить через NuGet)
+- Visual Studio 2019+
+
+### Быстрый старт
+
+1. Установите пакет: `Install-Package Newtonsoft.Json`
+2. Создайте папку `DataModels` с JSON файлами
+3. Измените `path` в ViewModel на актуальный путь
+4. Соберите и запустите проект
+
+---
+
+**Результат:** Приложение сохраняет все изменения (добавление, редактирование, удаление) в JSON-файлы, данные сохраняются между запусками программы.
 
