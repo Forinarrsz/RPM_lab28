@@ -10,7 +10,7 @@ namespace WpfApp2.Model
         private string firstName;
         private string lastName;
         private string middleName;
-        private DateTime birthday;
+        public string Birthday { get; set; }
         private string groupName;
         private double averageGrade;
 
