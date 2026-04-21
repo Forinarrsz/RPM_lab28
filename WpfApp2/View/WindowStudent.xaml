@@ -1,0 +1,47 @@
+﻿<Window x:Class="WpfApp2.View.WindowStudent"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Студенты" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Панель кнопок -->
+        <StackPanel Orientation="Horizontal" Background="#FFE4E0E0" Grid.Row="0">
+            <!-- ✅ ИСПРАВЛЕНО: Убран Click, добавлен Command и Style -->
+            <Button Style="{StaticResource ButtonMenu}" 
+                    Content="Добавить" 
+                    Command="{Binding AddStudent}"/>
+
+            <Button Style="{StaticResource ButtonMenu}" 
+                    Content="Редактировать" 
+                    Command="{Binding EditStudent}"/>
+
+            <Button Style="{StaticResource ButtonMenu}" 
+                    Content="Удалить" 
+                    Command="{Binding DeleteStudent}"/>
+        </StackPanel>
+
+        <!-- Список студентов -->
+        <ListView x:Name="lvStudent" 
+                  Grid.Row="1" 
+                  ItemsSource="{Binding ListStudentDPO}" 
+                  SelectedItem="{Binding SelectedStudentDPO}"
+                  Background="#FFD3CDCD"
+                  Margin="5">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Id" DisplayMemberBinding="{Binding Id}"/>
+                    <GridViewColumn Header="Фамилия" DisplayMemberBinding="{Binding LastName}"/>
+                    <GridViewColumn Header="Имя" DisplayMemberBinding="{Binding FirstName}"/>
+                    <GridViewColumn Header="Отчество" DisplayMemberBinding="{Binding MiddleName}"/>
+                    <GridViewColumn Header="Дата рождения" DisplayMemberBinding="{Binding Birthday}"/>
+                    <GridViewColumn Header="Группа" DisplayMemberBinding="{Binding GroupName}"/>
+                    <GridViewColumn Header="Средний балл" DisplayMemberBinding="{Binding AverageGrade}"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
+    </Grid>
+</Window>
