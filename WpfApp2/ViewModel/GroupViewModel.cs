@@ -93,6 +93,7 @@ namespace WpfApp2.ViewModel
                         Name = editGroup.Name,
                         Specialty = editGroup.Specialty,
                         Course = editGroup.Course
+                        //save
                     };
                     wnGroup.DataContext = tempGroup;
 
