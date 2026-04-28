@@ -1,68 +1,21 @@
-﻿using System.ComponentModel;
-using System.Runtime.CompilerServices;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace WpfApp2.Model
 {
-    public class Group : INotifyPropertyChanged
+    public class Group
     {
-        private string name;
-        private string specialty;
-        private int course;
-
+        [Key]
         public int Id { get; set; }
 
-        public string Name
-        {
-            get => name;
-            set
-            {
-                name = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(GroupName));
-            }
-        }
+        public string Name { get; set; }
+        public string Specialty { get; set; }
+        public int Course { get; set; }
+        public virtual ICollection<Student> Students { get; set; }
 
-        public string GroupName
+        public Group()
         {
-            get => name;
-            set
-            {
-                name = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(Name));
-            }
-        }
-
-        public string Specialty
-        {
-            get => specialty;
-            set
-            {
-                specialty = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public int Course
-        {
-            get => course;
-            set
-            {
-                course = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
-        public Group ShallowCopy()
-        {
-            return (Group)this.MemberwiseClone();
+            Students = new HashSet<Student>();
         }
     }
 }

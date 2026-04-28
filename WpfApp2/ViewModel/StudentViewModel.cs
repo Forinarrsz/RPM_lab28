@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
+using System.Data.Entity;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
-using Newtonsoft.Json;
 using WpfApp2.Helper;
 using WpfApp2.Model;
 using WpfApp2.View;
@@ -14,32 +13,27 @@ namespace WpfApp2.ViewModel
 {
     public class StudentViewModel : INotifyPropertyChanged
     {
-        readonly string path = @"C:\Users\User\source\repos\Forinarrsz\RPM_lab28\WpfApp2\DataModels\StudentData.json";
-
         public ObservableCollection<Student> ListStudent { get; set; } = new ObservableCollection<Student>();
-        public ObservableCollection<StudentDPO> ListStudentDPO { get; set; } = new ObservableCollection<StudentDPO>();
 
-        private StudentDPO _selectedStudentDPO;
-        public StudentDPO SelectedStudentDPO
+        private Student _selectedStudent;
+        public Student SelectedStudent
         {
-            get => _selectedStudentDPO;
+            get => _selectedStudent;
             set
             {
-                _selectedStudentDPO = value;
+                _selectedStudent = value;
                 OnPropertyChanged();
                 EditStudent?.RaiseCanExecuteChanged();
                 DeleteStudent?.RaiseCanExecuteChanged();
             }
         }
 
-        string _jsonStudents = String.Empty;
         public string Error { get; set; }
         public string Message { get; set; }
 
         public StudentViewModel()
         {
-            ListStudent = LoadStudent();
-            ListStudentDPO = GetListStudentDPO();
+            ListStudent = GetStudents();
         }
 
         #region Commands
@@ -57,36 +51,34 @@ namespace WpfApp2.ViewModel
                         Owner = Application.Current.MainWindow
                     };
 
-                    int maxId = MaxId() + 1;
-                    StudentDPO studentDPO = new StudentDPO
+                    Student newStudent = new Student
                     {
-                        Id = maxId,
-                        birthday = DateTime.Now.ToString("dd.MM.yyyy")
+                        Birthday = DateTime.Now
                     };
-                    wnStudent.DataContext = studentDPO;
+                    wnStudent.DataContext = newStudent;
 
                     if (wnStudent.ShowDialog() == true)
                     {
-                        var selectedGroup = wnStudent.CbGroup?.SelectedItem as Group;
-                        if (selectedGroup != null)
+                        using (var context = new AppDbContext())
                         {
-                            studentDPO.GroupName = selectedGroup.Name;
-                            ListStudentDPO.Add(studentDPO);
-
-                            Student student = new Student
+                            try
                             {
-                                Id = studentDPO.Id,
-                                GroupId = selectedGroup.Id,
-                                FirstName = studentDPO.FirstName,
-                                LastName = studentDPO.LastName,
-                                birthday = studentDPO.birthday 
-                            };
-                            ListStudent.Add(student);
-                            SaveChanges(ListStudent);
-                        }
-                        else
-                        {
-                            Message = "Необходимо выбрать группу студента.";
+                                if (newStudent.GroupId <= 0)
+                                {
+                                    MessageBox.Show("Необходимо выбрать группу студента.", "Предупреждение");
+                                    return;
+                                }
+
+                                context.Students.Add(newStudent);
+                                context.SaveChanges();
+
+                                ListStudent.Clear();
+                                ListStudent = GetStudents();
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show("\nОшибка добавления данных!\n" + ex.Message, "Предупреждение");
+                            }
                         }
                     }
                 }, (obj) => true));
@@ -100,42 +92,68 @@ namespace WpfApp2.ViewModel
             {
                 return _editStudent ?? (_editStudent = new RelayCommand(obj =>
                 {
+                    Student editStudent = SelectedStudent;
                     WindowNewStudent wnStudent = new WindowNewStudent
                     {
                         Title = "Редактирование студента",
                         Owner = Application.Current.MainWindow
                     };
 
-                    StudentDPO studentDPO = SelectedStudentDPO;
-                    StudentDPO tempStudent = studentDPO.ShallowCopy();
+                    
+                    Student tempStudent = new Student
+                    {
+                        Id = editStudent.Id,
+                        GroupId = editStudent.GroupId,
+                        FirstName = editStudent.FirstName,
+                        LastName = editStudent.LastName,
+                        MiddleName = editStudent.MiddleName,
+                        Birthday = editStudent.Birthday,
+                        AverageGrade = editStudent.AverageGrade
+                    };
                     wnStudent.DataContext = tempStudent;
 
                     if (wnStudent.ShowDialog() == true)
                     {
-                        var selectedGroup = wnStudent.CbGroup?.SelectedItem as Group;
-                        if (selectedGroup != null)
+                        using (var context = new AppDbContext())
                         {
-                            studentDPO.GroupName = selectedGroup.Name;
-                            studentDPO.FirstName = tempStudent.FirstName;
-                            studentDPO.LastName = tempStudent.LastName;
-                            studentDPO.birthday = tempStudent.birthday;
-
-                            var student = ListStudent.FirstOrDefault(s => s.Id == studentDPO.Id);
-                            if (student != null)
+                            try
                             {
-                                student.GroupId = selectedGroup.Id;
-                                student.FirstName = studentDPO.FirstName;
-                                student.LastName = studentDPO.LastName;
-                                student.birthday = studentDPO.birthday;
+                                // Находим сущность в контексте по Id
+                                Student student = context.Students.Find(editStudent.Id);
+                                if (student != null)
+                                {
+                                    // Обновляем свойства только если они изменились
+                                    if (student.GroupId != tempStudent.GroupId)
+                                        student.GroupId = tempStudent.GroupId;
+                                    if (student.FirstName != tempStudent.FirstName)
+                                        student.FirstName = tempStudent.FirstName?.Trim();
+                                    if (student.LastName != tempStudent.LastName)
+                                        student.LastName = tempStudent.LastName?.Trim();
+                                    if (student.MiddleName != tempStudent.MiddleName)
+                                        student.MiddleName = tempStudent.MiddleName?.Trim();
+                                    if (student.Birthday != tempStudent.Birthday)
+                                        student.Birthday = tempStudent.Birthday;
+                                    if (student.AverageGrade != tempStudent.AverageGrade)
+                                        student.AverageGrade = tempStudent.AverageGrade;
+
+                                    context.SaveChanges();
+
+                                    ListStudent.Clear();
+                                    ListStudent = GetStudents();
+                                }
                             }
-                            SaveChanges(ListStudent);
-                        }
-                        else
-                        {
-                            Message = "Необходимо выбрать группу студента.";
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show("\nОшибка редактирования данных!\n" + ex.Message, "Предупреждение");
+                            }
                         }
                     }
-                }, (obj) => SelectedStudentDPO != null && ListStudentDPO.Count > 0));
+                    else
+                    {
+                        ListStudent.Clear();
+                        ListStudent = GetStudents();
+                    }
+                }, (obj) => SelectedStudent != null && ListStudent.Count > 0));
             }
         }
 
@@ -146,7 +164,7 @@ namespace WpfApp2.ViewModel
             {
                 return _deleteStudent ?? (_deleteStudent = new RelayCommand(obj =>
                 {
-                    StudentDPO student = SelectedStudentDPO;
+                    Student student = SelectedStudent;
                     MessageBoxResult result = MessageBox.Show(
                         $"Удалить данные по студенту:\n{student.LastName} {student.FirstName}",
                         "Предупреждение",
@@ -155,15 +173,25 @@ namespace WpfApp2.ViewModel
 
                     if (result == MessageBoxResult.OK)
                     {
-                        ListStudentDPO.Remove(student);
-                        var studentModel = ListStudent.FirstOrDefault(s => s.Id == student.Id);
-                        if (studentModel != null)
+                        using (var context = new AppDbContext())
                         {
-                            ListStudent.Remove(studentModel);
-                            SaveChanges(ListStudent);
+                            try
+                            {
+                                Student delStudent = context.Students.Find(student.Id);
+                                if (delStudent != null)
+                                {
+                                    context.Students.Remove(delStudent);
+                                    context.SaveChanges();
+                                    ListStudent.Remove(student);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show("\nОшибка удаления данных!\n" + ex.Message, "Предупреждение");
+                            }
                         }
                     }
-                }, (obj) => SelectedStudentDPO != null && ListStudentDPO.Count > 0));
+                }, (obj) => SelectedStudent != null && ListStudent.Count > 0));
             }
         }
 
@@ -171,71 +199,16 @@ namespace WpfApp2.ViewModel
 
         #region Methods
 
-        public ObservableCollection<Student> LoadStudent()
+      
+        private ObservableCollection<Student> GetStudents()
         {
-            try
+            using (var context = new AppDbContext())
             {
-                _jsonStudents = File.ReadAllText(path);
-                if (_jsonStudents != null)
-                {
-                    ListStudent = JsonConvert.DeserializeObject<ObservableCollection<Student>>(_jsonStudents);
-                    return ListStudent;
-                }
-            }
-            catch (Exception e)
-            {
-                Error = "Ошибка чтения JSON файла:\n" + e.Message;
-            }
-            return new ObservableCollection<Student>();
-        }
+                var query = from s in context.Students.Include("Group")
+                            orderby s.LastName
+                            select s;
 
-        public ObservableCollection<StudentDPO> GetListStudentDPO()
-        {
-            ListStudentDPO.Clear();
-            foreach (var student in ListStudent)
-            {
-                var group = FindGroupById(student.GroupId);
-                ListStudentDPO.Add(new StudentDPO
-                {
-                    Id = student.Id,
-                    FirstName = student.FirstName,
-                    LastName = student.LastName,
-                    birthday = student.birthday,
-                    GroupName = group?.Name ?? "Неизвестно"
-                });
-            }
-            return ListStudentDPO;
-        }
-
-        private Group FindGroupById(int groupId)
-        {
-            var groupVm = new GroupViewModel();
-            return groupVm.ListGroup.FirstOrDefault(g => g.Id == groupId);
-        }
-
-        public int MaxId()
-        {
-            int max = 0;
-            foreach (var s in ListStudent)
-            {
-                if (max < s.Id) max = s.Id;
-            }
-            return max;
-        }
-
-        private void SaveChanges(ObservableCollection<Student> listStudents)
-        {
-            var jsonStudent = JsonConvert.SerializeObject(listStudents, Formatting.Indented);
-            try
-            {
-                using (StreamWriter writer = File.CreateText(path))
-                {
-                    writer.Write(jsonStudent);
-                }
-            }
-            catch (IOException e)
-            {
-                Error = "Ошибка записи json файла\n" + e.Message;
+                return new ObservableCollection<Student>(query.ToList());
             }
         }
 

@@ -10,7 +10,6 @@
 
         <!-- Панель кнопок -->
         <StackPanel Orientation="Horizontal" Background="#FFE4E0E0" Grid.Row="0">
-            <!-- ✅ ИСПРАВЛЕНО: Убран Click, добавлен Command и Style -->
             <Button Style="{StaticResource ButtonMenu}" 
                     Content="Добавить" 
                     Command="{Binding AddStudent}"/>
@@ -24,12 +23,12 @@
                     Command="{Binding DeleteStudent}"/>
         </StackPanel>
 
-        <!-- Список студентов -->
         <ListView x:Name="lvStudent" 
                   Grid.Row="1" 
-                  ItemsSource="{Binding ListStudentDPO}" 
-                  SelectedItem="{Binding SelectedStudentDPO}"
-                  Background="#FFD3CDCD"
+                  ItemsSource="{Binding ListStudent}"            
+            SelectedItem="{Binding SelectedStudent}"
+           
+            Background="#FFD3CDCD"
                   Margin="5">
             <ListView.View>
                 <GridView>
@@ -37,8 +36,12 @@
                     <GridViewColumn Header="Фамилия" DisplayMemberBinding="{Binding LastName}"/>
                     <GridViewColumn Header="Имя" DisplayMemberBinding="{Binding FirstName}"/>
                     <GridViewColumn Header="Отчество" DisplayMemberBinding="{Binding MiddleName}"/>
-                    <GridViewColumn Header="Дата рождения" DisplayMemberBinding="{Binding Birthday}"/>
-                    <GridViewColumn Header="Группа" DisplayMemberBinding="{Binding GroupName}"/>
+                    <GridViewColumn Header="Дата рождения" 
+                                    DisplayMemberBinding="{Binding Birthday, StringFormat={}{0:dd.MM.yyyy}}"/>
+                    
+                    <GridViewColumn Header="Группа" 
+                                    DisplayMemberBinding="{Binding Group.Name}"/>
+                 
                     <GridViewColumn Header="Средний балл" DisplayMemberBinding="{Binding AverageGrade}"/>
                 </GridView>
             </ListView.View>

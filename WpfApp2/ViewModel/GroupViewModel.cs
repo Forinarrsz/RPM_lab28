@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
-using Newtonsoft.Json;
 using WpfApp2.Helper;
 using WpfApp2.Model;
 using WpfApp2.View;
@@ -13,9 +12,6 @@ namespace WpfApp2.ViewModel
 {
     public class GroupViewModel : INotifyPropertyChanged
     {
-       
-        readonly string path = @"C:\Users\User\source\repos\Forinarrsz\RPM_lab28\WpfApp2\DataModels\GroupData.json";
-
         public ObservableCollection<Group> ListGroup { get; set; } = new ObservableCollection<Group>();
 
         private Group _selectedGroup;
@@ -31,12 +27,11 @@ namespace WpfApp2.ViewModel
             }
         }
 
-        string _jsonGroups = String.Empty;
         public string Error { get; set; }
 
         public GroupViewModel()
         {
-            ListGroup = LoadGroup();
+            ListGroup = GetGroups();
         }
 
         #region Commands
@@ -54,14 +49,25 @@ namespace WpfApp2.ViewModel
                         Owner = Application.Current.MainWindow
                     };
 
-                    int maxId = MaxId() + 1;
-                    Group group = new Group { Id = maxId };
+                    Group group = new Group();
                     wnGroup.DataContext = group;
 
                     if (wnGroup.ShowDialog() == true)
                     {
-                        ListGroup.Add(group);
-                        SaveChanges(ListGroup);
+                        using (var context = new AppDbContext())
+                        {
+                            try
+                            {
+                                context.Groups.Add(group);
+                                context.SaveChanges();
+                                ListGroup.Clear();
+                                ListGroup = GetGroups();
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show("\nОшибка добавления данных!\n" + ex.Message, "Предупреждение");
+                            }
+                        }
                     }
                     SelectedGroup = group;
                 }, (obj) => true));
@@ -75,22 +81,53 @@ namespace WpfApp2.ViewModel
             {
                 return _editGroup ?? (_editGroup = new RelayCommand(obj =>
                 {
+                    Group editGroup = SelectedGroup;
                     WindowNewGroup wnGroup = new WindowNewGroup
                     {
                         Title = "Редактирование группы",
                         Owner = Application.Current.MainWindow
                     };
-
-                    Group group = SelectedGroup;
-                    Group tempGroup = group?.ShallowCopy();
+                    Group tempGroup = new Group
+                    {
+                        Id = editGroup.Id,
+                        Name = editGroup.Name,
+                        Specialty = editGroup.Specialty,
+                        Course = editGroup.Course
+                    };
                     wnGroup.DataContext = tempGroup;
 
                     if (wnGroup.ShowDialog() == true)
                     {
-                        group.Name = tempGroup.Name;
-                        group.Specialty = tempGroup.Specialty;
-                        group.Course = tempGroup.Course;
-                        SaveChanges(ListGroup);
+                        using (var context = new AppDbContext())
+                        {
+                            try
+                            { 
+                                Group group = context.Groups.Find(editGroup.Id);
+                                if (group != null)
+                                {
+                                    if (group.Name != tempGroup.Name)
+                                        group.Name = tempGroup.Name?.Trim();
+                                    if (group.Specialty != tempGroup.Specialty)
+                                        group.Specialty = tempGroup.Specialty?.Trim();
+                                    if (group.Course != tempGroup.Course)
+                                        group.Course = tempGroup.Course;
+
+                                    context.SaveChanges();
+                                    ListGroup.Clear();
+                                    ListGroup = GetGroups();
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show("\nОшибка редактирования данных!\n" + ex.Message, "Предупреждение");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Если отменили редактирование — перезагружаем список
+                        ListGroup.Clear();
+                        ListGroup = GetGroups();
                     }
                 }, (obj) => SelectedGroup != null && ListGroup.Count > 0));
             }
@@ -112,8 +149,24 @@ namespace WpfApp2.ViewModel
 
                     if (result == MessageBoxResult.OK)
                     {
-                        ListGroup.Remove(group);
-                        SaveChanges(ListGroup);
+                        using (var context = new AppDbContext())
+                        {
+                            try
+                            {
+                                // Находим сущность в контексте по Id
+                                Group delGroup = context.Groups.Find(group.Id);
+                                if (delGroup != null)
+                                {
+                                    context.Groups.Remove(delGroup);
+                                    context.SaveChanges();
+                                    ListGroup.Remove(group);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show("\nОшибка удаления данных!\n" + ex.Message, "Предупреждение");
+                            }
+                        }
                     }
                 }, (obj) => SelectedGroup != null && ListGroup.Count > 0));
             }
@@ -123,47 +176,15 @@ namespace WpfApp2.ViewModel
 
         #region Methods
 
-        public ObservableCollection<Group> LoadGroup()
+        private ObservableCollection<Group> GetGroups()
         {
-            try
+            using (var context = new AppDbContext())
             {
-                _jsonGroups = File.ReadAllText(path);
-                if (_jsonGroups != null)
-                {
-                    ListGroup = JsonConvert.DeserializeObject<ObservableCollection<Group>>(_jsonGroups);
-                    return ListGroup;
-                }
-            }
-            catch (Exception e)
-            {
-                Error = "Ошибка чтения JSON файла:\n" + e.Message;
-            }
-            return new ObservableCollection<Group>();
-        }
+                var query = from g in context.Groups
+                            orderby g.Name
+                            select g;
 
-        public int MaxId()
-        {
-            int max = 0;
-            foreach (var g in ListGroup)
-            {
-                if (max < g.Id) max = g.Id;
-            }
-            return max;
-        }
-
-        private void SaveChanges(ObservableCollection<Group> listGroup)
-        {
-            var jsonGroup = JsonConvert.SerializeObject(listGroup, Formatting.Indented);
-            try
-            {
-                using (StreamWriter writer = File.CreateText(path))
-                {
-                    writer.Write(jsonGroup);
-                }
-            }
-            catch (IOException e)
-            {
-                Error = "Ошибка записи json файла\n" + e.Message;
+                return new ObservableCollection<Group>(query.ToList());
             }
         }
 
@@ -176,5 +197,3 @@ namespace WpfApp2.ViewModel
         }
     }
 }
-
-//save

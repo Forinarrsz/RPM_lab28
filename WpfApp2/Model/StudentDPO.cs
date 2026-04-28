@@ -10,7 +10,7 @@ namespace WpfApp2.Model
         private string firstName;
         private string lastName;
         private string middleName;
-        public string birthday { get; set; }
+        public DateTime birthday { get; set; }
         private string groupName;
         private double averageGrade;
 
@@ -65,7 +65,7 @@ namespace WpfApp2.Model
             this.FirstName = student.FirstName;
             this.LastName = student.LastName;
             this.MiddleName = student.MiddleName;
-            this.birthday = student.birthday;
+            this.birthday = student.Birthday;
             this.AverageGrade = student.AverageGrade;
 
             // Примечание: GroupName обычно заполняется отдельно через ViewModel, 

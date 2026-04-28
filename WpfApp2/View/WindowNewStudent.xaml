@@ -18,7 +18,6 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Labels -->
         <TextBlock Grid.Row="0" Grid.Column="0" Text="Код:" 
                    VerticalAlignment="Center" HorizontalAlignment="Right" Margin="5"/>
         <TextBlock Grid.Row="1" Grid.Column="0" Text="Фамилия:" 
@@ -50,7 +49,6 @@
 
         <ComboBox Grid.Row="4" Grid.Column="1" 
                   x:Name="CbGroup"
-                  ItemsSource="{Binding ListGroup}"
                   DisplayMemberPath="Name" 
                   SelectedValuePath="Id" 
                   SelectedValue="{Binding GroupId, Mode=TwoWay}"

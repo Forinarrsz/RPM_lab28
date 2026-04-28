@@ -1,5 +1,5 @@
 ﻿using System.Windows;
-
+using WpfApp2.Model;
 namespace WpfApp2.View
 {
     public partial class WindowNewGroup : Window
@@ -11,8 +11,14 @@ namespace WpfApp2.View
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
         {
-            DialogResult = true;
-            Close();
+            if (string.IsNullOrWhiteSpace(((Group)this.DataContext).Name))
+            {
+                MessageBox.Show("Название группы не может быть пустым!", "Ошибка", 
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            this.DialogResult = true;
+            this.Close();
         }
     }
 }
